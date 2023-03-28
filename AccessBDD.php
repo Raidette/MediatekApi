@@ -60,6 +60,8 @@ class AccessBDD {
             switch($table){
                 case "exemplaire" :
                     return $this->selectAllExemplairesRevue($id);
+                case "commande" :
+                    return $this->selectAllCommandesByDocument($id);
                 default:
                     // cas d'un select portant sur une table simple			
                     $param = array(
@@ -141,7 +143,19 @@ class AccessBDD {
         $req .= "where e.id = :id ";
         $req .= "order by e.dateAchat DESC";		
         return $this->conn->query($req, $param);
-    }		
+    }
+    
+    public function selectAllCommandesByDocument($idLivreDvd)
+    {
+        $param = array(
+            "idLivreDvd" => $idLivreDvd
+        );
+        $req = "SELECT * ";
+        $req .= "FROM commande NATURAL JOIN commandedocument NATURAL JOIN suivi ";
+        $req .= "WHERE idLivreDvd = :idLivreDvd ";
+        $req .= "ORDER BY dateCommande DESC";		
+        return $this->conn->query($req, $param);
+    }
 
     /**
      * suppresion d'une ou plusieurs lignes dans une table
@@ -151,6 +165,10 @@ class AccessBDD {
      */	
     public function delete($table, $champs){
         if($this->conn != null){
+            if($table == "commande")
+            {
+                return $this->deleteCommande($table,$champs);
+            }
             // construction de la requête
             $requete = "delete from $table where ";
             foreach ($champs as $key => $value){
@@ -171,7 +189,14 @@ class AccessBDD {
      * @return true si l'ajout a fonctionné
      */	
     public function insertOne($table, $champs){
+
         if($this->conn != null && $champs != null){
+
+            if($table == "commande")
+            {         
+                return $result = $this->insertCommande($champs);
+            }
+
             // construction de la requête
             $requete = "insert into $table (";
             foreach ($champs as $key => $value){
@@ -186,11 +211,76 @@ class AccessBDD {
             // (enlève la dernière virgule)
             $requete = substr($requete, 0, strlen($requete)-1);
             $requete .= ");";	
-            return $this->conn->execute($requete, $champs);		
+                return $this->conn->execute($requete, $champs);		
         }else{
             return null;
         }
     }
+
+    public function deleteCommande($table, $champs)
+    {
+        $statutCommande = $this->conn->query("SELECT * FROM suivi WHERE id = :id",["id" => $champs["Id"]])[0];
+        if($statutCommande == "En cours" || $statutCommande == "Relancée")
+        {
+            $request = "DELETE FROM commande WHERE id = :id";
+            return $this->conn->execute($request,["id" => $champs["Id"]]);
+        }
+        else return null;
+    }
+
+    
+    public function insertCommande($champs)
+    {
+
+        $requetes = [];
+
+        if($this->conn != null && $champs != null)
+        {
+            try
+            {
+                $this->conn->beginTransaction();
+
+
+                $req1 = "INSERT INTO commande ";
+                $req1 .= "VALUES (:id,:dateCommande,:montant);";
+
+                $this->conn->execute($req1,[
+                    "id"=>$champs["Id"],
+                    "dateCommande"=>$champs["DateCommande"],
+                    "montant"=>$champs["Montant"]
+                ]);
+
+                $req2 = "INSERT INTO commandedocument ";
+                $req2 .= "VALUES (:id,:nbExemplaire,:idLivreDvd);";                
+                
+                $this->conn->execute($req2,[
+                    "id"=>$champs["Id"],
+                    "nbExemplaire"=>$champs["NbExemplaire"],
+                    "idLivreDvd"=>$champs["IdLivreDvd"]
+                ]);
+
+                $req3 = "INSERT INTO suivi ";
+                $req3 .= "VALUES (:id,:statut)";
+
+                $this->conn->execute($req3,[
+                    "id"=>$champs["Id"],
+                    "statut"=>$champs["Statut"]
+                ]);
+
+                $this->conn->commitTransaction();
+                return true;
+
+            }
+            catch(PDOException $ex)
+            {
+                $this->conn->rollbackTransaction();
+                return null;
+            }
+        }
+    }
+
+    
+        
 
     /**
      * modification d'une ligne dans une table
@@ -200,11 +290,17 @@ class AccessBDD {
      * @return true si la modification a fonctionné
      */	
     public function updateOne($table, $id, $champs){
+
+        
         if($this->conn != null && $champs != null){
+            if($table == "suivi")
+            {
+                return $this->updateSuivi($id,$champs);
+            }
             // construction de la requête
             $requete = "update $table set ";
             foreach ($champs as $key => $value){
-                $requete .= "$key=:$key,";
+                $requete .= "$key=:$key,";  
             }
             // (enlève la dernière virgule)
             $requete = substr($requete, 0, strlen($requete)-1);				
@@ -216,4 +312,31 @@ class AccessBDD {
         }
     }
 
+    public function updateSuivi($id,$champs)
+    {
+        $statutActuel = $this->conn->query("SELECT statut FROM suivi
+        WHERE id=:id",["id" => $id]);
+
+        $statutNouveau = $champs["Statut"];
+
+        if
+        (
+            $statutActuel != "Réglée" || 
+            ($statutActuel == "Livrée" && $statutNouveau == "Réglée") ||
+            ($statutActuel == "En cours" && ($statutNouveau == "Livrée" ||   $statutNouveau == "Relancée")) ||
+            ($statutActuel == "Relancée" && ($statutNouveau == "Livrée"))    
+        )
+        {
+            $req = "UPDATE suivi SET statut= :statut WHERE id=:id";    
+
+            return $this->conn->execute($req,[
+                "statut" => $statutNouveau,  
+                "id" => $id
+            ]);
+        }
+        else
+        {
+            return null;
+        }
+    }
 }

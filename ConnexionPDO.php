@@ -63,5 +63,33 @@ class ConnexionPDO {
             return null;
         }		
     }
+
+    /**
+     * Démarre une transaction avec la BDD.
+     */
+    public function beginTransaction(){
+
+        return $this->conn->beginTransaction();
+
+    }
+
+    /**
+     * Annule (rollback) une transaction 
+     * débutée avec la BDD.
+     */
+    public function rollbackTransaction(){
+
+        return $this->conn->rollBack();
+    }
+
+
+    /**
+     * Commit (valide) une transaction 
+     * avec la BDD.
+     */
+    public function commitTransaction(){
+
+         return $this->conn->commit();
+    }
 	
 }
