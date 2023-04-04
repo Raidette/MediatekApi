@@ -40,6 +40,9 @@ class AccessBDD {
                     return $this->selectAllRevues();
                 case "exemplaire" :
                     return $this->selectAllExemplairesRevue();
+                case "abonnements":
+                    return $this->selectAllAbonnements();
+    
                 default:
                     // cas d'un select portant sur une table simple, avec tri sur le libellé
                     return $this->selectAllTableSimple($table);
@@ -62,6 +65,8 @@ class AccessBDD {
                     return $this->selectAllExemplairesRevue($id);
                 case "commande" :
                     return $this->selectAllCommandesByDocument($id);
+                case "commandeRevue":
+                    return $this->selectAllCommandesByRevue($id);
                 default:
                     // cas d'un select portant sur une table simple			
                     $param = array(
@@ -157,6 +162,24 @@ class AccessBDD {
         return $this->conn->query($req, $param);
     }
 
+    public function selectAllCommandesByRevue($idRevue)
+    {
+        $param = array(
+            "idRevue" => $idRevue
+        );
+        $req = "SELECT * FROM commande NATURAL JOIN abonnement ";
+        $req .= "WHERE idRevue = :idRevue ORDER BY dateCommande DESC";	
+        return $this->conn->query($req, $param);    
+    }
+
+    public function selectAllAbonnements()
+    {
+        $req = "SELECT * FROM abonnement NATURAL JOIN commande ORDER BY dateFinAbonnement DESC";
+        return $this->conn->query($req, []); 
+    }
+
+
+
     /**
      * suppresion d'une ou plusieurs lignes dans une table
      * @param string $table nom de la table
@@ -169,6 +192,10 @@ class AccessBDD {
             {
                 return $this->deleteCommande($table,$champs);
             }
+            if($table == "abonnement")
+            {
+                return $this->deleteAbonnement($table,$champs);
+            }
             // construction de la requête
             $requete = "delete from $table where ";
             foreach ($champs as $key => $value){
@@ -180,6 +207,41 @@ class AccessBDD {
         }else{
             return null;
         }
+    }
+
+    
+    public function deleteCommande($table, $champs)
+    {
+        $statutCommande = $this->conn->query("SELECT * FROM suivi WHERE id = :id",["id" => $champs["Id"]])[0];
+        if($statutCommande == "En cours" || $statutCommande == "Relancée")
+        {
+            $request = "DELETE FROM commande WHERE id = :id";
+            return $this->conn->execute($request,["id" => $champs["Id"]]);
+        }
+        else return null;
+    }
+
+    public function deleteAbonnement($table, $champs)
+    {
+        try
+        {
+            $this->conn->beginTransaction();
+
+            $req1 = "DELETE FROM abonnement WHERE id = :id";
+            $this->conn->execute($req1,["id" => $champs["Id"]]);
+
+            $req2 = "DELETE FROM commande WHERE id = :id";
+            $this->conn->execute($req2,["id" => $champs["Id"]]);
+    
+            return $this->conn->commitTransaction();
+    
+        }
+        catch(PDOException $ex)
+        {
+            $this->conn->rollbackTransaction();
+            return null;
+        }
+
     }
 
     /**
@@ -195,6 +257,10 @@ class AccessBDD {
             if($table == "commande")
             {         
                 return $result = $this->insertCommande($champs);
+            }
+            else if($table == "commandeRevue")
+            {
+                return $result = $this->insertCommandeRevue($champs);
             }
 
             // construction de la requête
@@ -217,16 +283,6 @@ class AccessBDD {
         }
     }
 
-    public function deleteCommande($table, $champs)
-    {
-        $statutCommande = $this->conn->query("SELECT * FROM suivi WHERE id = :id",["id" => $champs["Id"]])[0];
-        if($statutCommande == "En cours" || $statutCommande == "Relancée")
-        {
-            $request = "DELETE FROM commande WHERE id = :id";
-            return $this->conn->execute($request,["id" => $champs["Id"]]);
-        }
-        else return null;
-    }
 
     
     public function insertCommande($champs)
@@ -239,7 +295,6 @@ class AccessBDD {
             try
             {
                 $this->conn->beginTransaction();
-
 
                 $req1 = "INSERT INTO commande ";
                 $req1 .= "VALUES (:id,:dateCommande,:montant);";
@@ -269,6 +324,54 @@ class AccessBDD {
 
                 $this->conn->commitTransaction();
                 return true;
+
+            }
+            catch(PDOException $ex)
+            {
+                $this->conn->rollbackTransaction();
+                return null;
+            }
+        }
+    }
+
+    public function insertCommandeRevue($champs)
+    {
+
+        $requetes = [];
+
+        if($this->conn != null && $champs != null)
+        {
+            try
+            {
+                $this->conn->beginTransaction();
+
+                $req1 = "DELETE FROM abonnement ";
+                $req1 .= "WHERE idRevue=:idRevue";
+
+                $this->conn->execute($req1,[
+                    "idRevue"=>$champs["IdRevue"]
+                ]);
+
+                $req2 = "INSERT INTO commande ";
+                $req2 .= "VALUES (:id,:dateCommande,:montant);";
+
+                $this->conn->execute($req2,[
+                    "id"=>$champs["Id"],
+                    "dateCommande"=>$champs["DateCommande"],
+                    "montant"=>$champs["Montant"]
+                ]);
+
+                $req3 = "INSERT INTO abonnement ";
+                $req3 .= "VALUES (:id,:dateFinAbonnement,:idRevue);";                
+                
+                $this->conn->execute($req3,[
+                    "id"=>$champs["Id"],
+                    "dateFinAbonnement"=>$champs["DateFinAbonnement"],
+                    "idRevue"=>$champs["IdRevue"]
+                ]);
+
+                
+                return $this->conn->commitTransaction();
 
             }
             catch(PDOException $ex)
