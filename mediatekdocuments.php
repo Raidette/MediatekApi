@@ -26,7 +26,14 @@ if(!isset($_SERVER['PHP_AUTH_USER']) || (isset($_SERVER['PHP_AUTH_USER']) &&
 
     // traitement suivant le verbe HTTP utilisé
     if($_SERVER['REQUEST_METHOD'] === 'GET'){
-        $controle->get($table, $id);
+        if(isset($contenu))
+        {
+            $controle->getWithContenu($table,$contenu);
+        }
+        else
+        {
+            $controle->get($table, $id);
+        }
     }else if($_SERVER['REQUEST_METHOD'] === 'POST'){
         $controle->post($table, $contenu);
     }else if($_SERVER['REQUEST_METHOD'] === 'PUT'){

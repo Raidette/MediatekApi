@@ -55,6 +55,22 @@ class Controle{
     }
 
     /**
+     * requete arrivée en GET (select) avec plusieurs paramètres
+     * @param string $table nom de la table
+     * @param string $id valeur de l'id
+     */
+    public function getWithContenu($table, $contenu){
+        $result = null;
+        
+        $result = $this->accessBDD->getWithContenu($table, $contenu);
+        if ($result == null || $result == false){
+            $this->reponse(400, "requete invalide");
+        }else{	
+            $this->reponse(200, "OK", $result);
+        }
+    }
+
+    /**
      * requete arrivée en DELETE
      * @param string $table nom de la table
      * @param array $champs nom et valeur des champs

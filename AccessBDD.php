@@ -42,6 +42,8 @@ class AccessBDD {
                     return $this->selectAllExemplairesRevue();
                 case "abonnements":
                     return $this->selectAllAbonnements();
+                case "services":
+                    return $this->selectAllServices();
     
                 default:
                     // cas d'un select portant sur une table simple, avec tri sur le libellé
@@ -178,6 +180,43 @@ class AccessBDD {
         return $this->conn->query($req, []); 
     }
 
+    public function selectAllServices()
+    {
+        return $this->conn->query("SELECT * FROM services");
+    }
+
+    public function getWithContenu($table,$contenu)
+    {
+        if($this->conn != null){
+            if($table == "utilisateur")
+            {
+                return $this->login($contenu);
+            }
+        }
+        else return null;
+    }
+
+    public function login($contenu)
+    {
+        $req = "SELECT * FROM utilisateurs ";
+        $req .= "WHERE nom = :nomUtilisateur";
+
+        $param = array(
+            "nomUtilisateur" => $contenu["Nom"],
+        );
+
+        $query = $this->conn->query($req,$param);
+
+        if($query != [] && password_verify($contenu["Mdp"],$query[0]["mdp"]))
+        {
+            return $query;
+        }
+        else
+        {
+            return null;    
+        }
+    }
+
 
 
     /**
@@ -203,9 +242,10 @@ class AccessBDD {
             }
             // (enlève le dernier and)
             $requete = substr($requete, 0, strlen($requete)-5);   
-            return $this->conn->execute($requete, $champs);		
+            return $this->conn->execute($requete, $champs);
         }else{
             return null;
+        }	
         }
     }
 
