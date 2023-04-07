@@ -3,11 +3,14 @@ header('Content-Type: application/json');
 include_once("Controle.php");
 $controle = new Controle();
 
+if($_SERVER["REQUEST_URI"] == "/rest_mediatekdocuments/")
+{
+    $controle->emptyError();
+}
 // Contrôle de l'authentification
-if(!isset($_SERVER['PHP_AUTH_USER']) || (isset($_SERVER['PHP_AUTH_USER']) && 
+else if(!isset($_SERVER['PHP_AUTH_USER']) || (isset($_SERVER['PHP_AUTH_USER']) && 
         !(($_SERVER['PHP_AUTH_USER']=='admin' && ($_SERVER['PHP_AUTH_PW']=='adminpwd'))))){
-    $controle->unauthorized();
-    
+    $controle->unauthorized();    
 }else{
     
     // récupération des données
@@ -24,7 +27,7 @@ if(!isset($_SERVER['PHP_AUTH_USER']) || (isset($_SERVER['PHP_AUTH_USER']) &&
         $contenu = json_decode($contenu, true);
     }
 
-    // traitement suivant le verbe HTTP utilisé
+
     if($_SERVER['REQUEST_METHOD'] === 'GET'){
         if(isset($contenu))
         {

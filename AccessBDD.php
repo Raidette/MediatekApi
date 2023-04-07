@@ -247,7 +247,6 @@ class AccessBDD {
             return null;
         }	
         }
-
     
     public function deleteCommande($table, $champs)
     {
