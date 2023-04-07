@@ -3,3 +3,6 @@ RewriteRule ^([a-zA-Z]+)$ mediatekdocuments.php?table=$1
 RewriteRule ^([a-zA-Z]+)/([a-zA-Z0-9]+)$ mediatekdocuments.php?table=$1&id=$2
 RewriteRule ^([a-zA-Z]+)/({.*})$ mediatekdocuments.php?table=$1&contenu=$2
 RewriteRule ^([a-zA-Z]+)/([a-zA-Z0-9]+)/({.*})$ mediatekdocuments.php?table=$1&id=$2&contenu=$3
+
+RewriteCond %{QUERY_STRING} ^$
+    RewriteRule ^$ mediatekdocuments.php?

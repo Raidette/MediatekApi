@@ -119,4 +119,9 @@ class Controle{
     public function unauthorized(){
         $this->reponse(401, "authentification incorrecte");
     }
+
+    public function emptyError()
+    {
+        $this->reponse(406,"Requête non acceptable. (vide)");
+    }
 }
