@@ -152,6 +152,11 @@ class AccessBDD {
         return $this->conn->query($req, $param);
     }
     
+    /**
+     * Sélection de toutes les commandes liées à un document.
+     * @param string $idLivreDvd Id du document.
+     * @return array Liste des commandes.
+     */
     public function selectAllCommandesByDocument($idLivreDvd)
     {
         $param = array(
@@ -164,6 +169,11 @@ class AccessBDD {
         return $this->conn->query($req, $param);
     }
 
+    /**
+     * Sélection de toutes les commandes liées à une revue.
+     * @param String $idRevue Id de la revue.
+     * @return array Liste des commandes.
+     */
     public function selectAllCommandesByRevue($idRevue)
     {
         $param = array(
@@ -174,17 +184,30 @@ class AccessBDD {
         return $this->conn->query($req, $param);    
     }
 
+    /**
+     * Permet de récupérer tous les abonnements.
+     * @return array Liste des abonnements.
+     */
     public function selectAllAbonnements()
     {
         $req = "SELECT * FROM abonnement NATURAL JOIN commande ORDER BY dateFinAbonnement DESC";
         return $this->conn->query($req, []); 
     }
 
+    /**
+     * Permet de récupérer tous les services.
+     * @return array Liste des services.
+     */
     public function selectAllServices()
     {
         return $this->conn->query("SELECT * FROM services");
     }
 
+    /**
+     * Permet de récupérer des données dans une table avec un contenu.
+     * @param string $table Table dans laquelle effectuer la recherche.
+     * @param array $contenu Contenu avec lequel on veut effectuer la recherche.
+     */
     public function getWithContenu($table,$contenu)
     {
         if($this->conn != null){
@@ -196,6 +219,11 @@ class AccessBDD {
         else return null;
     }
 
+    /**
+     * Permet de vérifier le couple mdp/username dans la BDD.
+     * @param array $contenu Contenu de la requête.
+     * @return array Paramètres de l'utilisateur.
+     */
     public function login($contenu)
     {
         $req = "SELECT * FROM utilisateurs ";
@@ -229,11 +257,11 @@ class AccessBDD {
         if($this->conn != null){
             if($table == "commande")
             {
-                return $this->deleteCommande($table,$champs);
+                return $this->deleteCommande($champs);
             }
             if($table == "abonnement")
             {
-                return $this->deleteAbonnement($table,$champs);
+                return $this->deleteAbonnement($champs);
             }
             // construction de la requête
             $requete = "delete from $table where ";
@@ -248,7 +276,12 @@ class AccessBDD {
         }	
         }
     
-    public function deleteCommande($table, $champs)
+    /**
+     * Supprime une commande de document.
+     * @param array $champs Informations de la commande à supprimer.
+     * @return bool Résultat de la suppression.
+     */
+    public function deleteCommande($champs)
     {
         $statutCommande = $this->conn->query("SELECT * FROM suivi WHERE id = :id",["id" => $champs["Id"]])[0];
         if($statutCommande == "En cours" || $statutCommande == "Relancée")
@@ -259,7 +292,12 @@ class AccessBDD {
         else return null;
     }
 
-    public function deleteAbonnement($table, $champs)
+    /**
+     * Supprime un abonnement.
+     * @param array $champs Informations de l'abonnement à supprimer.
+     * @return bool Résultat de la suppression.
+     */
+    public function deleteAbonnement($champs)
     {
         try
         {
@@ -322,7 +360,10 @@ class AccessBDD {
     }
 
 
-    
+    /**
+     * Insère une commande de document.
+     * @param array $champs Informations de la commande à ajouter.
+     */
     public function insertCommande($champs)
     {
 
@@ -372,6 +413,11 @@ class AccessBDD {
         }
     }
 
+    /**
+     * Ajout de la commande d'une revue.
+     * @param array $champs Informations de la commande de revue à ajouter.
+     * @return bool Résultat de l'insertion.
+     */
     public function insertCommandeRevue($champs)
     {
 
@@ -453,6 +499,13 @@ class AccessBDD {
         }
     }
 
+    /**
+     * Modification du suivi d'une commande.
+     * 
+     * @param string $id Id de la commande à modifier
+     * @param array $champs Champs contenant le nouveau suivi de la commande.
+     * @return bool Résultat de la requête. 
+     */
     public function updateSuivi($id,$champs)
     {
         $statutActuel = $this->conn->query("SELECT statut FROM suivi

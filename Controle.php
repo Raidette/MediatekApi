@@ -120,6 +120,9 @@ class Controle{
         $this->reponse(401, "authentification incorrecte");
     }
 
+    /**
+     * Requête vide.
+     */
     public function emptyError()
     {
         $this->reponse(406,"Requête non acceptable. (vide)");
