@@ -6,9 +6,9 @@ include_once("ConnexionPDO.php");
  */
 class AccessBDD {
 	
-    public $login="root";
-    public $mdp="";
-    public $bd="mediatek86";
+    public $login="adminmediatek";
+    public $mdp="M3D!@T3Kdocuments";
+    public $bd="mediatekdocuments";
     public $serveur="localhost";
     public $port="3306";	
     public $conn = null;
