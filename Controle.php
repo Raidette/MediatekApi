@@ -78,7 +78,7 @@ class Controle{
     public function delete($table, $champs){
         $result = $this->accessBDD->delete($table, $champs);	
         if ($result == null || $result == false){
-            $this->reponse(400, "requete invalide");
+            $this->reponse(400, "requete invalide", [$table,$champs]);
         }else{	
             $this->reponse(200, "OK");
         }

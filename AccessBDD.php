@@ -6,9 +6,9 @@ include_once("ConnexionPDO.php");
  */
 class AccessBDD {
 	
-    public $login="adminmediatek";
+    public $login="mediatekdocuments";
     public $mdp="M3D!@T3Kdocuments";
-    public $bd="mediatekdocuments";
+    public $bd="mediatek86";
     public $serveur="localhost";
     public $port="3306";	
     public $conn = null;
@@ -283,7 +283,7 @@ class AccessBDD {
      */
     public function deleteCommande($champs)
     {
-        $statutCommande = $this->conn->query("SELECT * FROM suivi WHERE id = :id",["id" => $champs["Id"]])[0];
+        $statutCommande = $this->conn->query("SELECT statut FROM suivi WHERE id = :id",["id" => $champs["Id"]])[0]["statut"];
         if($statutCommande == "En cours" || $statutCommande == "Relancée")
         {
             $request = "DELETE FROM commande WHERE id = :id";
